@@ -80,22 +80,34 @@
     };
   }
 
-  function setBody(store, path, body, cb) {
+  function setBody(store, path, body, revision, cb) {
     if (cb) {
       store.get(path).onsuccess = function(evt) {
         var oldBody;
         if (evt.target.result) {
           oldBody = evt.target.result.body;
         }
-        setBody(store, path, body);
+        setBody(store, path, body, revision);
         cb(oldBody);
       };
     } else {
       store.put({
         path: path,
-        body: body
+        body: body,
+        revision: revision || true
       });
     }
+  }
+
+  function setItemRevision(store, path, revision) {
+    store.get(path).onsuccess = function(evt) {
+      var item;
+      if (evt.target.result) {
+        item = evt.target.result;
+        body.revision = revision || true;
+        store.put(item);
+      }
+    };
   }
 
   function getMetas(store, path, cb) {
@@ -109,10 +121,11 @@
     };
   }
 
-  function setMetas(store, path, items) {
+  function setMetas(store, path, items, revision) {
     store.put({
       path: path,
-      items: items
+      items: items,
+      revision: revision || true
     });
   }
     
@@ -238,7 +251,7 @@
         addToParent(store, pathObj, revision, contentType, body.length, function(setOldRevision) {
           oldRevision = setOldRevision;
         });
-        setBody(store, path, body, function(setOldBody) {
+        setBody(store, path, body, revision, function(setOldBody) {
           oldBody = setOldBody;
         });
       } catch(e) {
@@ -275,7 +288,7 @@
         transaction = this.db.transaction(['nodes'], 'readwrite'),
         store = transaction.objectStore('nodes');
       
-      setMetas(store, path, items);
+      setMetas(store, path, items, revision);
       addToParent(store, parsePath(path), revision);
 
       transaction.oncomplete = function() {
@@ -328,6 +341,7 @@
       var pathObj = parsePath(path),
         transaction = this.db.transaction(['nodes'], 'readwrite'),
         promise = promising();
+      setItemRevision(transaction.objectStore('nodes'), path, revision);
       addToParent(transaction.objectStore('nodes'), pathObj, revision);
 
       transaction.oncomplete = function() {
