@@ -117,6 +117,7 @@
     for (i in localBody) {
       checkVersion(remote, local, path+i, localBody[i].ETag);
     }
+    return promising().fulfill();
   }
 
   function synchronize(remote, local, path, options) {
