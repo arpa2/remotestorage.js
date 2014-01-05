@@ -100,6 +100,25 @@
     }
   }
 
+  function checkVersion(remote, local, path, revision) {
+    local.get(path).then(function(localStatus, localBody, localContentType, localRevision) {
+      if (localRevision == revision) {
+        if (isFolder(path)) {
+          checkChildrenVersions(remote, local, path, localBody);
+        }
+      } else {
+        synchronize(remote, local, path, {});
+      }
+    });
+  }
+
+  function checkChildrenVersions(remote, local, path, localBody) {
+    var i;
+    for (i in localBody) {
+      checkVersion(remote, local, path+i, localBody[i].ETag);
+    }
+  }
+
   function synchronize(remote, local, path, options) {
     var promise = promising();
     local.get(path).then(function(localStatus, localBody, localContentType, localRevision) {
@@ -109,8 +128,8 @@
         if (remoteStatus === 401 || remoteStatus === 403) {
           throw new RemoteStorage.Unauthorized();
         } else if (remoteStatus === 412 || remoteStatus === 304) {
-          // up to date.
-          promise.fulfill();
+          // up to date, just make sure children are as well.
+          return checkChildrenVersions(remote, local, path, localBody);
         } else if (localStatus === 404 && remoteStatus === 200) {
           // local doesn't exist, remote does.
           updateLocal(remote, local, path, remoteBody, remoteContentType, remoteRevision, promise);
