@@ -129,8 +129,9 @@
         if (remoteStatus === 401 || remoteStatus === 403) {
           throw new RemoteStorage.Unauthorized();
         } else if (remoteStatus === 412 || remoteStatus === 304) {
-          // up to date, just make sure children are as well.
-          return checkChildrenVersions(remote, local, path, localBody);
+          //// up to date, just make sure children are as well.
+          //return checkChildrenVersions(remote, local, path, localBody);
+          return promise.fulfill();
         } else if (localStatus === 404 && remoteStatus === 200) {
           // local doesn't exist, remote does.
           updateLocal(remote, local, path, remoteBody, remoteContentType, remoteRevision, promise);
